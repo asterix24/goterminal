@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/nsf/termbox-go"
 )
 
@@ -24,7 +25,22 @@ func tbprint(x, y int, fg, bg termbox.Attribute, msg string) {
 	}
 }
 
+func foo(s string) int {
+	fmt.Println(s)
+	return 0
+}
+
+type callback func(s string) int
+
 func main() {
+
+	m := make(map[rune]callback)
+	call := foo
+	call("sdflsd")
+
+	m['a'] = foo
+	m['a']("mappa..")
+
 	err := termbox.Init()
 	if err != nil {
 		panic(err)
