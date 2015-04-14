@@ -46,6 +46,7 @@ func idle_mode_down(status *Status) int {
 	termbox.SetCursor(status.cur_pos.x, status.cur_pos.y)
 	return 0
 }
+
 func idle_mode_right(status *Status) int {
 	w, _ := termbox.Size()
 	if status.cur_pos.x >= w {
@@ -55,6 +56,7 @@ func idle_mode_right(status *Status) int {
 	termbox.SetCursor(status.cur_pos.x, status.cur_pos.y)
 	return 0
 }
+
 func idle_mode_left(status *Status) int {
 	if status.cur_pos.x <= 0 {
 		return 0
@@ -70,7 +72,7 @@ func command_mode(status *Status) int {
 	status.cmd_cur_pos.x = 0
 	status.cmd_cur_pos.y = h
 	termbox.SetCell(0, h, ':', termbox.ColorDefault, termbox.ColorDefault)
-	termbox.SetCursor(0, h)
+	termbox.SetCursor(1, h)
 	termbox.Flush()
 
 	return 0
@@ -87,6 +89,44 @@ func command_mode_line(status *Status, s rune) int {
 	return 0
 }
 
+func cmd_mode_up(status *Status) int {
+	return 0
+}
+func cmd_mode_down(status *Status) int {
+	return 0
+}
+func cmd_mode_right(status *Status) int {
+	w, h := termbox.Size()
+	if status.cmd_cur_pos.x >= w {
+		return 0
+	}
+	status.cmd_cur_pos.x += 1
+	termbox.SetCursor(status.cmd_cur_pos.x, h-CMD_LINE)
+	return 0
+}
+func cmd_mode_left(status *Status) int {
+	_, h := termbox.Size()
+	if status.cmd_cur_pos.x <= 1 {
+		return 0
+	}
+	status.cmd_cur_pos.x -= 1
+	termbox.SetCursor(status.cmd_cur_pos.x, h-CMD_LINE)
+	return 0
+}
+
+func cmd_mode_canc(status *Status) int {
+	_, h := termbox.Size()
+	if status.cmd_cur_pos.x <= 0 {
+		return 0
+	}
+	termbox.SetCell(status.cmd_cur_pos.x, h-CMD_LINE, ' ', termbox.ColorDefault, termbox.ColorDefault)
+	status.cmd_cur_pos.x -= 1
+	termbox.SetCell(status.cmd_cur_pos.x, h-CMD_LINE, ' ', termbox.ColorDefault, termbox.ColorDefault)
+	termbox.SetCursor(status.cmd_cur_pos.x, h-CMD_LINE)
+	termbox.Flush()
+	return 0
+}
+
 type callback func(status *Status) int
 
 var idle_mode_map = map[rune]callback{
@@ -99,6 +139,15 @@ var idle_mode_map = map[rune]callback{
 	rune('l'):                   idle_mode_right,
 	rune('h'):                   idle_mode_left,
 	rune(':'):                   command_mode,
+}
+
+var cmd_mode_map = map[rune]callback{
+	rune(termbox.KeyArrowUp):    cmd_mode_up,
+	rune(termbox.KeyArrowDown):  cmd_mode_down,
+	rune(termbox.KeyArrowRight): cmd_mode_right,
+	rune(termbox.KeyArrowLeft):  cmd_mode_left,
+	rune(termbox.KeyBackspace):  cmd_mode_canc,
+	rune(termbox.KeyBackspace2): cmd_mode_canc,
 }
 
 var status Status
@@ -149,7 +198,16 @@ loop:
 		}
 
 		if status.mode == "CMD" {
-			command_mode_line(&status, ev.Ch)
+			foo_key, ok_key := cmd_mode_map[rune(ev.Key)]
+			foo, ok := cmd_mode_map[rune(ev.Ch)]
+
+			if ok_key {
+				foo_key(&status)
+			} else if ok {
+				foo(&status)
+			} else {
+				command_mode_line(&status, ev.Ch)
+			}
 		}
 
 		//command_line(status, &cmd, ev.Ch)
