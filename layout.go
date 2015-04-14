@@ -19,6 +19,25 @@ const CMD_LINE = 1
 const BAR_POS = 2
 const FOOTER_HIGH = 4
 
+func init_layout(status *Status) {
+	message := "Asterix Emulatore Seriale!"
+
+	w, h := termbox.Size()
+	status.cur_pos = CursorsPos{w / 2, h / 2}
+	status.mode = "IDLE"
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+
+	status.cur_pos.x -= len(message) / 2
+	for _, v := range message {
+		termbox.SetCell(status.cur_pos.x, status.cur_pos.y, rune(v), termbox.ColorDefault, termbox.ColorDefault)
+		status.cur_pos.x++
+	}
+
+	termbox.SetCursor(status.cur_pos.x, status.cur_pos.y)
+	termbox.HideCursor()
+	termbox.Flush()
+}
+
 func layout() {
 	w, h := termbox.Size()
 	for x := 0; x < w; x++ {
@@ -160,10 +179,7 @@ func main() {
 	}
 	defer termbox.Close()
 
-	layout()
-	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
-	status.mode = "IDLE"
-	status.cur_pos = CursorsPos{0, 0}
+	init_layout(&status)
 
 	event_queue := make(chan termbox.Event)
 	go func() {
