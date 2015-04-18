@@ -29,10 +29,16 @@ func init_layout(status *Status) {
 
 	termbox.SetCursor(status.cur_pos.x, status.cur_pos.y)
 	termbox.HideCursor()
-	termbox.Flush()
+
+	draw()
 }
 
-func layout() {
+func reset_view(status *Status) {
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+	termbox.SetCursor(status.cur_pos.x, status.cur_pos.y)
+}
+
+func draw() {
 	w, h := termbox.Size()
 	for x := 0; x < w; x++ {
 		termbox.SetCell(x, h-BAR_POS, ' ', termbox.ColorDefault, termbox.ColorBlue)
