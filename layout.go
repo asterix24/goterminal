@@ -15,14 +15,14 @@ const FOOTER_HIGH = 4
 
 func clearc(status *Status) {
 	_, h := termbox.Size()
-	if status.cmd_pos <= 1 {
+	if status.cmd_pos < 0 {
 		return
 	}
 
 	termbox.SetCell(status.cmd_pos, h-CMD_LINE, ' ', termbox.ColorDefault, termbox.ColorDefault)
 	termbox.SetCursor(status.cmd_pos, h-CMD_LINE)
 
-	if status.cmd_pos >= 0 {
+	if status.cmd_pos > 0 {
 		status.cmd_pos -= 1
 		return
 	}
@@ -148,6 +148,7 @@ func command_mode(status *Status) int {
 
 func command_mode_line(status *Status, s rune) int {
 	LinePutc(status, s)
+	status.command = status.command + string(s)
 	return 0
 }
 
@@ -186,7 +187,10 @@ func cmd_mode_canc(status *Status) int {
 
 func cmd_mode_exec(status *Status) int {
 	LineClear(status)
-	LinePrint(status, "Comando non  trovano..")
+	LinePrint(status, ">>> ")
+	LinePrint(status, status.command)
+	command_queue <- status.command
+	status.command = ""
 	return 0
 }
 
@@ -212,4 +216,46 @@ var cmd_mode_map = map[rune]callback{
 	rune(termbox.KeyBackspace):  cmd_mode_canc,
 	rune(termbox.KeyBackspace2): cmd_mode_canc,
 	rune(termbox.KeyEnter):      cmd_mode_exec,
+}
+
+func KeyEventPoll() {
+	for {
+		event_queue <- termbox.PollEvent()
+	}
+}
+
+func ProcessCmd(status *Status) {
+	ev := <-event_queue
+	if ev.Type != termbox.EventKey {
+		return
+	}
+
+	if ev.Key == termbox.KeyEsc {
+		status.mode = "IDLE"
+		Reset(status)
+	}
+
+	if status.mode == "IDLE" {
+		foo_key, ok_key := idle_mode_map[rune(ev.Key)]
+		foo, ok := idle_mode_map[rune(ev.Ch)]
+
+		if ok_key {
+			foo_key(status)
+		} else if ok {
+			foo(status)
+		}
+	}
+
+	if status.mode == "CMD" {
+		foo_key, ok_key := cmd_mode_map[rune(ev.Key)]
+		foo, ok := cmd_mode_map[rune(ev.Ch)]
+
+		if ok_key {
+			foo_key(status)
+		} else if ok {
+			foo(status)
+		} else {
+			command_mode_line(status, ev.Ch)
+		}
+	}
 }

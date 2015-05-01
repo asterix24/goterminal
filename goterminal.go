@@ -12,6 +12,8 @@ type Status struct {
 }
 
 var status Status
+var event_queue chan termbox.Event
+var command_queue chan string
 
 func main() {
 
@@ -21,55 +23,16 @@ func main() {
 	}
 	defer termbox.Close()
 
+	// Init key event channel
+	event_queue = make(chan termbox.Event)
+	command_queue = make(chan string)
+
 	InitLayout(&status)
+	go KeyEventPoll()
+	go Command()
 
-	event_queue := make(chan termbox.Event)
-	go func() {
-		for {
-			event_queue <- termbox.PollEvent()
-		}
-	}()
-
-loop:
 	for {
-		ev := <-event_queue
-		if ev.Type != termbox.EventKey {
-			continue
-		}
-
-		if ev.Key == termbox.KeyEsc {
-			status.mode = "IDLE"
-			Reset(&status)
-		}
-
-		if status.mode == "IDLE" {
-			foo_key, ok_key := idle_mode_map[rune(ev.Key)]
-			foo, ok := idle_mode_map[rune(ev.Ch)]
-
-			if ok_key {
-				foo_key(&status)
-			} else if ok {
-				foo(&status)
-			}
-		}
-
-		if status.mode == "CMD" {
-			foo_key, ok_key := cmd_mode_map[rune(ev.Key)]
-			foo, ok := cmd_mode_map[rune(ev.Ch)]
-
-			if ok_key {
-				foo_key(&status)
-			} else if ok {
-				foo(&status)
-			} else {
-				command_mode_line(&status, ev.Ch)
-			}
-		}
-
-		if ev.Key == termbox.KeyCtrlQ {
-			break loop
-		}
-
+		ProcessCmd(&status)
 		Draw()
 	}
 }
