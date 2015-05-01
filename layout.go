@@ -63,11 +63,13 @@ func LinePutc(status *Status, c rune) {
 	termbox.Flush()
 }
 
-func init_layout(status *Status) {
+func InitLayout(status *Status) {
 	message := "Asterix Emulatore Seriale!"
 
 	w, h := termbox.Size()
 	status.cur_pos = CursorsPos{w / 2, h / 2}
+	status.cmd_pos = 0
+
 	status.mode = "IDLE"
 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 
@@ -80,15 +82,15 @@ func init_layout(status *Status) {
 	termbox.SetCursor(status.cur_pos.x, status.cur_pos.y)
 	termbox.HideCursor()
 
-	draw()
+	Draw()
 }
 
-func reset_view(status *Status) {
+func Reset(status *Status) {
 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 	termbox.SetCursor(status.cur_pos.x, status.cur_pos.y)
 }
 
-func draw() {
+func Draw() {
 	w, h := termbox.Size()
 	for x := 0; x < w; x++ {
 		termbox.SetCell(x, h-BAR_POS, ' ', termbox.ColorDefault, termbox.ColorBlue)
@@ -152,9 +154,11 @@ func command_mode_line(status *Status, s rune) int {
 func cmd_mode_up(status *Status) int {
 	return 0
 }
+
 func cmd_mode_down(status *Status) int {
 	return 0
 }
+
 func cmd_mode_right(status *Status) int {
 	w, h := termbox.Size()
 	if status.cmd_pos >= w {
@@ -164,6 +168,7 @@ func cmd_mode_right(status *Status) int {
 	termbox.SetCursor(status.cmd_pos, h-CMD_LINE)
 	return 0
 }
+
 func cmd_mode_left(status *Status) int {
 	_, h := termbox.Size()
 	if status.cmd_pos <= 1 {

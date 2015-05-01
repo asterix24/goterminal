@@ -21,7 +21,7 @@ func main() {
 	}
 	defer termbox.Close()
 
-	init_layout(&status)
+	InitLayout(&status)
 
 	event_queue := make(chan termbox.Event)
 	go func() {
@@ -39,7 +39,7 @@ loop:
 
 		if ev.Key == termbox.KeyEsc {
 			status.mode = "IDLE"
-			reset_view(&status)
+			Reset(&status)
 		}
 
 		if status.mode == "IDLE" {
@@ -70,6 +70,6 @@ loop:
 			break loop
 		}
 
-		draw()
+		Draw()
 	}
 }
