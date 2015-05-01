@@ -5,9 +5,10 @@ import (
 )
 
 type Status struct {
-	mode        string
-	cur_pos     CursorsPos
-	cmd_cur_pos CursorsPos
+	mode    string
+	cur_pos CursorsPos
+	cmd_pos int
+	command string
 }
 
 var status Status

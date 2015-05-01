@@ -13,6 +13,56 @@ const CMD_LINE = 1
 const BAR_POS = 2
 const FOOTER_HIGH = 4
 
+func clearc(status *Status) {
+	_, h := termbox.Size()
+	if status.cmd_pos <= 1 {
+		return
+	}
+
+	termbox.SetCell(status.cmd_pos, h-CMD_LINE, ' ', termbox.ColorDefault, termbox.ColorDefault)
+	termbox.SetCursor(status.cmd_pos, h-CMD_LINE)
+
+	if status.cmd_pos >= 0 {
+		status.cmd_pos -= 1
+		return
+	}
+}
+
+func putc(status *Status, c rune) {
+	w, h := termbox.Size()
+	if status.cmd_pos >= w {
+		return
+	}
+
+	termbox.SetCell(status.cmd_pos, h-CMD_LINE, rune(c), termbox.ColorDefault, termbox.ColorDefault)
+	termbox.SetCursor(status.cmd_pos+1, h-CMD_LINE)
+	status.cmd_pos++
+}
+
+func LineClear(status *Status) {
+	w, h := termbox.Size()
+	for i := 0; i < w; i++ {
+		termbox.SetCell(i, h-CMD_LINE, ' ', termbox.ColorDefault, termbox.ColorDefault)
+	}
+
+	termbox.SetCursor(0, h-CMD_LINE)
+	status.cmd_pos = 0
+
+	termbox.Flush()
+}
+
+func LinePrint(status *Status, message string) {
+	for _, v := range message {
+		putc(status, v)
+	}
+	termbox.Flush()
+}
+
+func LinePutc(status *Status, c rune) {
+	putc(status, c)
+	termbox.Flush()
+}
+
 func init_layout(status *Status) {
 	message := "Asterix Emulatore Seriale!"
 
@@ -85,26 +135,17 @@ func idle_mode_left(status *Status) int {
 	return 0
 }
 
+// Command function
+
 func command_mode(status *Status) int {
 	status.mode = "CMD"
-	_, h := termbox.Size()
-	status.cmd_cur_pos.x = 0
-	status.cmd_cur_pos.y = h
-	termbox.SetCell(0, h, ':', termbox.ColorDefault, termbox.ColorDefault)
-	termbox.SetCursor(1, h)
-	termbox.Flush()
-
+	LineClear(status)
+	LinePutc(status, ':')
 	return 0
 }
 
 func command_mode_line(status *Status, s rune) int {
-	w, h := termbox.Size()
-	if status.cmd_cur_pos.x <= w-1 {
-		status.cmd_cur_pos.x += 1
-		termbox.SetCell(status.cmd_cur_pos.x, h-CMD_LINE, s, termbox.ColorDefault, termbox.ColorDefault)
-		termbox.SetCursor(status.cmd_cur_pos.x+1, h-CMD_LINE)
-	}
-	termbox.Flush()
+	LinePutc(status, s)
 	return 0
 }
 
@@ -116,33 +157,31 @@ func cmd_mode_down(status *Status) int {
 }
 func cmd_mode_right(status *Status) int {
 	w, h := termbox.Size()
-	if status.cmd_cur_pos.x >= w {
+	if status.cmd_pos >= w {
 		return 0
 	}
-	status.cmd_cur_pos.x += 1
-	termbox.SetCursor(status.cmd_cur_pos.x, h-CMD_LINE)
+	status.cmd_pos += 1
+	termbox.SetCursor(status.cmd_pos, h-CMD_LINE)
 	return 0
 }
 func cmd_mode_left(status *Status) int {
 	_, h := termbox.Size()
-	if status.cmd_cur_pos.x <= 1 {
+	if status.cmd_pos <= 1 {
 		return 0
 	}
-	status.cmd_cur_pos.x -= 1
-	termbox.SetCursor(status.cmd_cur_pos.x, h-CMD_LINE)
+	status.cmd_pos -= 1
+	termbox.SetCursor(status.cmd_pos, h-CMD_LINE)
 	return 0
 }
 
 func cmd_mode_canc(status *Status) int {
-	_, h := termbox.Size()
-	if status.cmd_cur_pos.x <= 0 {
-		return 0
-	}
-	termbox.SetCell(status.cmd_cur_pos.x, h-CMD_LINE, ' ', termbox.ColorDefault, termbox.ColorDefault)
-	status.cmd_cur_pos.x -= 1
-	termbox.SetCell(status.cmd_cur_pos.x, h-CMD_LINE, ' ', termbox.ColorDefault, termbox.ColorDefault)
-	termbox.SetCursor(status.cmd_cur_pos.x, h-CMD_LINE)
-	termbox.Flush()
+	clearc(status)
+	return 0
+}
+
+func cmd_mode_exec(status *Status) int {
+	LineClear(status)
+	LinePrint(status, "Comando non  trovano..")
 	return 0
 }
 
@@ -167,4 +206,5 @@ var cmd_mode_map = map[rune]callback{
 	rune(termbox.KeyArrowLeft):  cmd_mode_left,
 	rune(termbox.KeyBackspace):  cmd_mode_canc,
 	rune(termbox.KeyBackspace2): cmd_mode_canc,
+	rune(termbox.KeyEnter):      cmd_mode_exec,
 }
